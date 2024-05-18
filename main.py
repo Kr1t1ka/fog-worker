@@ -51,18 +51,12 @@ async def get_load():
 
         # Get CPU information
         cpu_info = psutil.cpu_freq()
-        print(cpu_info)
-        max_freq = cpu_info.max
-        print(max_freq)
+        max_freq = cpu_info.max if cpu_info.max > 0 else cpu_info.current
         current_freq = cpu_info.current
-        print(current_freq)
         num_cores = psutil.cpu_count(logical=False)
-        print(num_cores)
 
         # Calculate total FLOPS
         total_flops = 2 * num_cores * max_freq * 10 ** 9  # 2 FLOPs per cycle
-        print(total_flops)
-
         # Calculate available FLOPS (assuming 50% CPU utilization)
         available_flops = total_flops * (1 - cpu_load / 100)
 
