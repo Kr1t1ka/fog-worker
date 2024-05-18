@@ -1,4 +1,5 @@
 import json
+import traceback
 
 from fastapi import FastAPI, HTTPException
 from starlette.responses import JSONResponse, Response
@@ -50,12 +51,17 @@ async def get_load():
 
         # Get CPU information
         cpu_info = psutil.cpu_freq()
+        print(cpu_info)
         max_freq = cpu_info.max
+        print(max_freq)
         current_freq = cpu_info.current
+        print(current_freq)
         num_cores = psutil.cpu_count(logical=False)
+        print(num_cores)
 
         # Calculate total FLOPS
         total_flops = 2 * num_cores * max_freq * 10 ** 9  # 2 FLOPs per cycle
+        print(total_flops)
 
         # Calculate available FLOPS (assuming 50% CPU utilization)
         available_flops = total_flops * (1 - cpu_load / 100)
@@ -75,6 +81,7 @@ async def get_load():
             "current_freq": current_freq,
         }
     except Exception as e:
+        traceback.print_exc()
         return {"error": str(e)}, 500
 
 
