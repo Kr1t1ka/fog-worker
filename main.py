@@ -100,6 +100,9 @@ async def run_docker_container(image: str, environment: dict = None,
     if waited:
         container.wait()
         logs = container.logs()
+        print(f"container.logs: {logs}")
+        print(f"container.logs.decode(): {logs.decode()}")
+
         logs_dict = json.loads(logs.decode())
     else:
         logs_dict = {}
@@ -111,7 +114,6 @@ async def run_docker_container(image: str, environment: dict = None,
             "logs": logs_dict,
         }
     )
-    # return JSONResponse({})
 
 
 @app.delete("/docker/containers/all", status_code=204)
