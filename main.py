@@ -1,15 +1,13 @@
 import json
 import traceback
 
-from fastapi import FastAPI, HTTPException
-from starlette.responses import JSONResponse, Response
 import docker
 import psutil
+from fastapi import FastAPI
+from starlette.responses import JSONResponse, Response
 
-# Initialize Docker client
 client = docker.from_env()
 
-# Create FastAPI instance
 app = FastAPI(docs_url="/api/swagger/", openapi_url="/api/openapi.json")
 
 
@@ -99,9 +97,9 @@ async def run_docker_container(image: str, environment: dict = None,
     """
     container = client.containers.run(image, detach=True,
                                       environment=environment)
-    logs = container.logs()
     if waited:
         container.wait()
+        logs = container.logs()
         logs_dict = json.loads(logs.decode())
     else:
         logs_dict = {}
@@ -113,6 +111,7 @@ async def run_docker_container(image: str, environment: dict = None,
             "logs": logs_dict,
         }
     )
+    # return JSONResponse({})
 
 
 @app.delete("/docker/containers/all", status_code=204)
