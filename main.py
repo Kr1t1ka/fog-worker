@@ -1,4 +1,6 @@
 import json
+import logging
+import os
 import traceback
 
 import docker
@@ -10,6 +12,9 @@ client = docker.from_env()
 
 app = FastAPI(docs_url="/api/swagger/", openapi_url="/api/openapi.json")
 
+WORKER_NAME = os.getenv('WORKER_NAME', 'worker_*')
+
+logger = logging.getLogger(WORKER_NAME)
 
 @app.get("/server/load", status_code=200)
 async def get_load():
@@ -63,8 +68,7 @@ async def get_load():
 
         # Get available RAM
         available_ram = psutil.virtual_memory().available / 2 ** 30  # Convert to GB
-
-        return {
+        res = {
             "cpu_load": cpu_load,
             "total_FLOPS": total_flops,
             "available_FLOPS": available_flops,
@@ -72,6 +76,8 @@ async def get_load():
             "available_RAM": available_ram,
             "current_freq": current_freq,
         }
+        logger.info(f"loder {res}")
+        return res
     except Exception as e:
         traceback.print_exc()
         return {"error": str(e)}, 500
@@ -95,6 +101,7 @@ async def run_docker_container(image: str, environment: dict = None,
         status: The status of the container.
         logs: The logs of the container.
     """
+    logger.info(f'worker start {image} job')
     container = client.containers.run(image, detach=True,
                                       environment=environment)
     if waited:
@@ -103,6 +110,7 @@ async def run_docker_container(image: str, environment: dict = None,
         logs_dict = json.loads(logs.decode())
     else:
         logs_dict = {}
+    logger.info(f'worker finish {image} job')
     return JSONResponse(
         {
             "container_id": container.id,
@@ -121,5 +129,5 @@ async def stop_all_docker_containers():
     for container in client.containers.list(all=True):
         container.stop()
         container.remove()
-
+    logger.info('all docker containers remove')
     return Response(status_code=204)
