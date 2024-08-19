@@ -118,7 +118,7 @@ async def stop_all_docker_containers():
     """
     Stops all running Docker containers.
     """
-    for container in client.containers.list():
+    for container in client.containers.list(all=True):
         container.stop()
         container.remove()
 
