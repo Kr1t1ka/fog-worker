@@ -76,7 +76,7 @@ async def get_load():
             "available_RAM": available_ram,
             "current_freq": current_freq,
         }
-        logger.info(f"loder {res}")
+        print(f"loder {res}")
         return res
     except Exception as e:
         traceback.print_exc()
@@ -101,7 +101,7 @@ async def run_docker_container(image: str, environment: dict = None,
         status: The status of the container.
         logs: The logs of the container.
     """
-    logger.info(f'worker start {image} job')
+    print(f'worker start {image} job')
     container = client.containers.run(image, detach=True,
                                       environment=environment)
     if waited:
@@ -110,7 +110,7 @@ async def run_docker_container(image: str, environment: dict = None,
         logs_dict = json.loads(logs.decode())
     else:
         logs_dict = {}
-    logger.info(f'worker finish {image} job')
+    print(f'worker finish {image} job')
     return JSONResponse(
         {
             "container_id": container.id,
@@ -129,5 +129,5 @@ async def stop_all_docker_containers():
     for container in client.containers.list(all=True):
         container.stop()
         container.remove()
-    logger.info('all docker containers remove')
+    print('all docker containers remove')
     return Response(status_code=204)
