@@ -120,5 +120,6 @@ async def stop_all_docker_containers():
     """
     for container in client.containers.list():
         container.stop()
+        container.remove()
 
     return Response(status_code=204)
