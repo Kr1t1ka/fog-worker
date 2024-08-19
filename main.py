@@ -16,6 +16,7 @@ WORKER_NAME = os.getenv('WORKER_NAME', 'worker_*')
 
 logger = logging.getLogger(WORKER_NAME)
 
+
 @app.get("/server/load", status_code=200)
 async def get_load():
     """
@@ -76,11 +77,28 @@ async def get_load():
             "available_RAM": available_ram,
             "current_freq": current_freq,
         }
-        print(f"worker {WORKER_NAME}: loder {res}")
+        print(f"{WORKER_NAME}: loder {res}")
         return res
     except Exception as e:
         traceback.print_exc()
         return {"error": str(e)}, 500
+
+
+@app.put("/server/load", status_code=200)
+async def get_load(percent: int, timestamp: int):
+    """
+    Set load on server.
+    """
+    print(f'{WORKER_NAME}: set load percent:{percent} timestamp:{timestamp}')
+    container = client.containers.run(
+        'kr1t1ka/optimus',
+        detach=True,
+        environment={
+            "LOAD_PERCENT": percent,
+            "TIMESTAMP": timestamp
+        }
+    )
+    return container.id
 
 
 @app.post("/docker/run", status_code=201)
@@ -101,7 +119,7 @@ async def run_docker_container(image: str, environment: dict = None,
         status: The status of the container.
         logs: The logs of the container.
     """
-    print(f'worker {WORKER_NAME}: start {image} job')
+    print(f'{WORKER_NAME}: start {image} job')
     container = client.containers.run(image, detach=True,
                                       environment=environment)
     if waited:
@@ -110,7 +128,7 @@ async def run_docker_container(image: str, environment: dict = None,
         logs_dict = json.loads(logs.decode())
     else:
         logs_dict = {}
-    print(f'worker {WORKER_NAME}: finish {image} job')
+    print(f'{WORKER_NAME}: finish {image} job')
     return JSONResponse(
         {
             "container_id": container.id,
@@ -129,5 +147,5 @@ async def stop_all_docker_containers():
     for container in client.containers.list(all=True):
         container.stop()
         container.remove()
-    print(f'worker {WORKER_NAME}: all docker containers remove')
+    print(f'{WORKER_NAME}: all docker containers remove')
     return Response(status_code=204)
