@@ -19,49 +19,26 @@ WORKER_NAME = os.getenv('WORKER_NAME', 'worker_*')
 logger = logging.getLogger(WORKER_NAME)
 
 
-
 def get_gpu_info():
-    # Инициализация платформ OpenCL
-    platforms = cl.get_platforms()
-    gpu_load = None
-    total_flops = 0
-    available_flops = 0
-    available_flops_percentage = 0
+    # Эмуляция значений для нагрузки GPU в процентах
+    gpu_load = random.uniform(0, 100)  # Значение от 0 до 100%
 
-    # Получение информации о загрузке CPU как косвенный показатель загрузки GPU
-    cpu_load = psutil.cpu_percent(interval=1)
+    # Эмуляция общей производительности в TFLOPS (например, для средней видеокарты)
+    total_flops = random.uniform(5, 20)  # Значение от 5 до 20 TFLOPS
 
-    # Перебор всех доступных устройств
-    for platform in platforms:
-        devices = platform.get_devices()
-        for device in devices:
-            if device.type == cl.device_type.GPU:
-                # Получение информации о GPU
-                compute_units = device.max_compute_units
-                clock_frequency = device.max_clock_frequency  # в МГц
+    # Эмуляция доступных FLOPS на основе нагрузки
+    available_flops = total_flops * (1 - gpu_load / 100)
 
-                # Теоретическая оценка FLOPS (в TFLOPS)
-                # Формула: FLOPS = 2 * Compute Units * Clock Frequency * 10^6
-                total_flops = 2 * compute_units * clock_frequency * 1e6 / 1e12  # перевод в TFLOPS
+    # Расчет процента доступных FLOPS
+    available_flops_percentage = (available_flops / total_flops) * 100
 
-                # Учитываем загрузку GPU (с учетом CPU, поскольку PyOpenCL не предоставляет загрузку GPU)
-                gpu_load = cpu_load  # предположительно, используем загрузку CPU как прокси для GPU
-
-                available_flops = total_flops * (1 - gpu_load / 100)
-                available_flops_percentage = (
-                                                         available_flops / total_flops) * 100
-
-                break  # считаем только первый найденный GPU
-
-    # Формируем словарь с результатами
-    result = {
-        "gpu_load": gpu_load,
-        "total_FLOPS": total_flops,
-        "available_FLOPS": available_flops,
-        "available_FLOPS_percentage": available_flops_percentage,
+    # Формирование словаря с результатами
+    return {
+        "gpu_load": round(gpu_load, 2),
+        "total_FLOPS": round(total_flops, 2),
+        "available_FLOPS": round(available_flops, 2),
+        "available_FLOPS_percentage": round(available_flops_percentage, 2),
     }
-
-    return result
 
 
 @app.get("/server/load", status_code=200)
@@ -124,7 +101,7 @@ async def get_load():
             "available_gpu_FLOPS_percentage": random.uniform(0, 1) * 100,
             "available_RAM": available_ram,
             "current_freq": current_freq,
-            "gpu" : get_gpu_info()
+            "gpu": get_gpu_info()
         }
         print(f"{WORKER_NAME}: loder {res}")
         return res
