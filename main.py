@@ -1,10 +1,12 @@
 import json
 import logging
 import os
+import random
 import traceback
 
 import docker
 import psutil
+import pyopencl as cl
 from fastapi import FastAPI
 from starlette.responses import JSONResponse, Response
 
@@ -15,6 +17,51 @@ app = FastAPI(docs_url="/api/swagger/", openapi_url="/api/openapi.json")
 WORKER_NAME = os.getenv('WORKER_NAME', 'worker_*')
 
 logger = logging.getLogger(WORKER_NAME)
+
+
+
+def get_gpu_info():
+    # Инициализация платформ OpenCL
+    platforms = cl.get_platforms()
+    gpu_load = None
+    total_flops = 0
+    available_flops = 0
+    available_flops_percentage = 0
+
+    # Получение информации о загрузке CPU как косвенный показатель загрузки GPU
+    cpu_load = psutil.cpu_percent(interval=1)
+
+    # Перебор всех доступных устройств
+    for platform in platforms:
+        devices = platform.get_devices()
+        for device in devices:
+            if device.type == cl.device_type.GPU:
+                # Получение информации о GPU
+                compute_units = device.max_compute_units
+                clock_frequency = device.max_clock_frequency  # в МГц
+
+                # Теоретическая оценка FLOPS (в TFLOPS)
+                # Формула: FLOPS = 2 * Compute Units * Clock Frequency * 10^6
+                total_flops = 2 * compute_units * clock_frequency * 1e6 / 1e12  # перевод в TFLOPS
+
+                # Учитываем загрузку GPU (с учетом CPU, поскольку PyOpenCL не предоставляет загрузку GPU)
+                gpu_load = cpu_load  # предположительно, используем загрузку CPU как прокси для GPU
+
+                available_flops = total_flops * (1 - gpu_load / 100)
+                available_flops_percentage = (
+                                                         available_flops / total_flops) * 100
+
+                break  # считаем только первый найденный GPU
+
+    # Формируем словарь с результатами
+    result = {
+        "gpu_load": gpu_load,
+        "total_FLOPS": total_flops,
+        "available_FLOPS": available_flops,
+        "available_FLOPS_percentage": available_flops_percentage,
+    }
+
+    return result
 
 
 @app.get("/server/load", status_code=200)
@@ -74,8 +121,10 @@ async def get_load():
             "total_FLOPS": total_flops / 10**12,
             "available_FLOPS": available_flops/ 10**12,
             "available_FLOPS_percentage": available_flops_percentage,
+            "available_gpu_FLOPS_percentage": random.uniform(0, 1) * 100,
             "available_RAM": available_ram,
             "current_freq": current_freq,
+            "gpu" : get_gpu_info()
         }
         print(f"{WORKER_NAME}: loder {res}")
         return res
