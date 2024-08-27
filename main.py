@@ -73,7 +73,7 @@ async def get_load():
             "cpu_load": cpu_load,
             "total_FLOPS": total_flops / 10**12,
             "available_FLOPS": available_flops/ 10**12,
-            "available_FLOPS_percentage": available_flops_percentage/ 10**12,
+            "available_FLOPS_percentage": available_flops_percentage,
             "available_RAM": available_ram,
             "current_freq": current_freq,
         }
