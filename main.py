@@ -71,9 +71,9 @@ async def get_load():
         available_ram = psutil.virtual_memory().available / 2 ** 30  # Convert to GB
         res = {
             "cpu_load": cpu_load,
-            "total_FLOPS": total_flops,
-            "available_FLOPS": available_flops,
-            "available_FLOPS_percentage": available_flops_percentage,
+            "total_FLOPS": total_flops / 10**12,
+            "available_FLOPS": available_flops/ 10**12,
+            "available_FLOPS_percentage": available_flops_percentage/ 10**12,
             "available_RAM": available_ram,
             "current_freq": current_freq,
         }
@@ -85,7 +85,7 @@ async def get_load():
 
 
 @app.put("/server/load", status_code=200)
-async def get_load(percent: int, timestamp: int):
+async def set_load(percent: int, timestamp: int):
     """
     Set load on server.
     """
